@@ -1,5 +1,6 @@
 NAME		:=	ft_traceroute
-SRCS		:=	srcs/main.c
+SRCS		:=	srcs/main.c \
+				srcs/dns.c
 
 HDRS		:=	incs/ft_traceroute.h
 
