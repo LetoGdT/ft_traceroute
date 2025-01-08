@@ -18,7 +18,7 @@ bool dns_lookup(struct s_ft_traceroute *tr) {
         return false;
     tr->serv_addr = *result->ai_addr;
     freeaddrinfo(result);
-    if (!inet_ntop(AF_INET, &(((struct sockaddr_in*)&tr->serv_addr)->sin_addr), tr->hostaddress, INET_ADDRSTRLEN))
+    if (!inet_ntop(AF_INET, &tr->serv_addr.sin_addr, tr->hostaddress, INET_ADDRSTRLEN))
     {
         fprintf(stderr, "%s\n", strerror(errno));
         return false;

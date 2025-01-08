@@ -6,13 +6,13 @@
 # define DFLT_MAX_HOPS 30
 # define DFLT_PROBE_NUMBER 3
 # define TIME_ERROR "Error when retrieving the time\n"
+# define SEND_ERROR "%s: Cannot send packets over socket: %s\n", argv[0], strerror(errno)
 
 struct s_ft_traceroute {
     char *             prog_name;
-    char *             canon_name;
+    char *             host_name;
     char               hostaddress[INET_ADDRSTRLEN];
-    struct sockaddr    serv_addr;
-    struct sockaddr_in destination_server;
+    struct sockaddr_in serv_addr;
     int                icmp_sockfd;
     int                udp_sockfd;
     uint8_t            current_TTL;
@@ -31,6 +31,5 @@ struct __attribute__((packed)) s_icmp_hdr {
 
 bool    dns_lookup(struct s_ft_traceroute *tr);
 char *  reverse_dns_lookup(char * const raw_pkt);
-int     fill_icmp_pkt(struct s_icmp_pkt *pkt, struct s_ft_traceroute const * tr);
 
 #endif

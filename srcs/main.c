@@ -12,13 +12,15 @@
 
 bool parse(int argc, char ** argv, struct s_ft_traceroute * tr) {
     tr->prog_name = argv[0];
-    tr->canon_name = "google.com";
+    tr->host_name = "google.com";
     return true;
 }
 
 bool init(struct s_ft_traceroute * tr) {
+    memset(&tr->serv_addr, 0, sizeof(tr->serv_addr));
     if (!dns_lookup(tr))
         return false;
+    // open udp and icmp sockets
     tr->udp_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (tr->udp_sockfd < 0) {
         fprintf(stderr, "%s: could not open socket: %s\n", tr->prog_name, strerror(errno));
@@ -32,11 +34,20 @@ bool init(struct s_ft_traceroute * tr) {
     }
     for (int i = 0 ; i < 32 ; i++)
         tr->udp_data[i] = 'A' + i;
-    memset(&tr->destination_server, 0, sizeof(struct sockaddr_in));
-    tr->destination_server.sin_family = AF_INET;
-    tr->destination_server.sin_port = htons(33434);  // Set server port
-    tr->destination_server.sin_addr = ((struct sockaddr_in)tr->serv_addr).sin_addr;
+    tr->serv_addr.sin_family = AF_INET;
+    tr->serv_addr.sin_port = htons(33434);  // Set server port
+    tr->serv_addr.sin_addr = ((struct sockaddr_in)tr->serv_addr).sin_addr;
     return true;
+}
+
+bool read_loop(struct s_ft_traceroute * tr) {
+    struct s_icmp_hdr hdr;
+
+    // if icmp packet type 11 code 0 
+        // measure response time
+        // reverse dns to get hostname
+    // else if no data received
+        // print *
 }
 
 int main(int argc, char ** argv) {
@@ -44,26 +55,25 @@ int main(int argc, char ** argv) {
     // Modern traceroute for Linux, version 2.1.2
     // Copyright (c) 2016  Dmitry Butskoy,   License: GPL v2 or any later
     struct s_ft_traceroute tr;
-    struct s_icmp_hdr hdr;
-
 
     // parse arguments
     if (!parse(argc, argv, &tr))
         return 1;
     // init
-    // open udp and icmp sockets
     init(&tr);
     for (tr.current_TTL = 1 ; tr.current_TTL <= DFLT_MAX_HOPS ; tr.current_TTL++) {
         setsockopt(tr.udp_sockfd, IPPROTO_IP, IP_TTL, &tr.current_TTL, sizeof(tr.current_TTL));
         for (tr.probe_number = 0 ; tr.probe_number < DFLT_PROBE_NUMBER ; tr.probe_number++) {
-
             // send over udp
+            if (sendto(tr.udp_sockfd, tr.udp_data, sizeof(tr.udp_data), 0, &(struct sockaddr)tr.serv_addr, sizeof(tr.serv_addr)) == -1) {
+                fprintf(stderr, SEND_ERROR);
+                close(tr.icmp_sockfd);
+                close(tr.udp_sockfd);
+                exit(1);
+            }
             // receive data over icmp
-            // if icmp packet type 11 code 0 
-                // measure response time
-                // reverse dns to get hostname
-            // else if no data received
-                // print *
+            read_loop(&tr);
+            tr.serv_addr.sin_port = tr.serv_addr.sin_port++;
         }
     }
     printf("Hello world\n");
