@@ -14,9 +14,9 @@ bool dns_lookup(struct s_ft_traceroute *tr) {
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_flags |= AI_CANONNAME;
-    if(getaddrinfo (tr->canon_name, NULL, &hints, &result)) 
+    if(getaddrinfo (tr->host_name, NULL, &hints, &result)) 
         return false;
-    tr->serv_addr = *result->ai_addr;
+    tr->serv_addr = *(struct sockaddr_in*)(result->ai_addr);
     freeaddrinfo(result);
     if (!inet_ntop(AF_INET, &tr->serv_addr.sin_addr, tr->hostaddress, INET_ADDRSTRLEN))
     {

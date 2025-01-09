@@ -5,7 +5,9 @@ SRCS		:=	srcs/main.c \
 HDRS		:=	incs/ft_traceroute.h
 
 OBJS		:=	$(addprefix objs/,$(notdir $(patsubst %.c,%.o,$(SRCS))))
-OBJS_BONUS	:=	$(addprefix objs/,$(notdir $(patsubst %.c,%.o,$(SRCS_BONUS))))
+
+LIBFT_DIR	:= libft
+LIBS		:= $(LIBFT_DIR)/libft.a
 
 CC			:=	gcc
 CFLAGS		:=	-Iincs
@@ -14,21 +16,29 @@ RM			:=	rm -f
 
 all:			$(NAME)
 
-$(NAME):		$(OBJS)
+$(NAME):		$(OBJS) | libs
 				@echo "Linking $(NAME)"
-				@$(CC) $^ -o $@ $(LDFLAGS)
+				@$(CC) $^ -o $@ $(LDFLAGS) $(LIBS)
 
 objs/%.o:		srcs/%.c $(HDRS)
 				@mkdir -p objs
 				@echo "Compiling $<"
 				@$(CC) $(CFLAGS) -c $< -o $@
 
+libs:
+				@echo "Making libft"
+				@$(MAKE) -C $(LIBFT_DIR)
+
 clean:
 				@echo "Deleting object files"
 				@$(RM) $(OBJS)
+				@echo "Cleaning libs"
+				@$(MAKE) -s -C $(LIBFT_DIR) clean
 
 fclean:			clean
 				@$(RM) $(NAME)
+				@echo "Force cleaning libs"
+				@$(MAKE) -s -C $(LIBFT_DIR) fclean
 
 re: 			fclean all
 
