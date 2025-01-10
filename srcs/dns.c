@@ -26,7 +26,7 @@ bool dns_lookup(struct s_ft_traceroute *tr) {
     return true;
 }
 
-char* reverse_dns_lookup(char * const raw_pkt) {
+char* reverse_dns_lookup(const char * raw_pkt) {
     struct sockaddr_in addr;
     char hostname[1024];
 
