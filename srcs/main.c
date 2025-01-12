@@ -45,15 +45,18 @@ void init(struct s_ft_traceroute * tr) {
 
 bool verify_udp_and_icmp_header(const char * recv_buff, const struct s_ft_traceroute * tr) {
     struct s_icmp_hdr hdr;
+    uint8_t size_of_first_ip_hdr;
+    uint8_t size_of_second_ip_hdr;
+    uint16_t dest_port;
 
     // Extract icmp header from received packet
-    ft_memcpy(&hdr, recv_buff + (recv_buff[0] && 0xF) * 4, sizeof(hdr));
+    ft_memcpy(&hdr, recv_buff + (recv_buff[0] & 0xF) * 4, sizeof(hdr));
     if (!(hdr.type == 11 && hdr.code == 0) && !hdr.type == 3)
         return false;
     // Extract destination port of the udp packet that caused the icmp packet to be sent
-    int size_of_first_ip_hdr = (recv_buff[0] && 0xF) * 4;
-    int size_of_second_ip_hdr = (recv_buff[size_of_first_ip_hdr + sizeof(hdr)] && 0xF) * 4;
-    uint16_t dest_port = recv_buff[size_of_first_ip_hdr + size_of_second_ip_hdr + sizeof(hdr)];
+    size_of_first_ip_hdr = (recv_buff[0] & 0xF) * 4;
+    size_of_second_ip_hdr = (recv_buff[size_of_first_ip_hdr + sizeof(hdr)] & 0xF) * 4;
+    ft_memcpy(&dest_port, recv_buff + size_of_first_ip_hdr + size_of_second_ip_hdr + sizeof(hdr) + 2, 2);
     return dest_port == tr->serv_addr.sin_port;
 }
 
@@ -67,21 +70,27 @@ void print_message(const char * recv_buff, struct s_ft_traceroute * tr) {
     // Get the time when the packet was received
     if (gettimeofday(&current_time, NULL)) 
         fail(tr, time_error);
-    timediff = (current_time.tv_sec - tr->send_time.tv_sec) * 1000 
-               + (double)(current_time.tv_usec - tr->send_time.tv_usec) / 1000;
+    timediff = (current_time.tv_sec - tr->send_time.tv_sec) * 1000
+               + ((double)(current_time.tv_usec - tr->send_time.tv_usec)) / 1000;
     // Extract responding server source address from ip header
     ft_memcpy(&addr.s_addr, recv_buff + 12, 4);
     remote_host_address = inet_ntoa(addr);
     // Check that the data is from a different host than the previous one
-    if (ft_strncmp(remote_host_address, tr->previous_host_address, INET_ADDRSTRLEN) == 0) {
-    // Perform reverse DNS to get hostname of responding server
+    if (ft_strncmp(remote_host_address, tr->previous_host_address, INET_ADDRSTRLEN) != 0) {
+        // Perform reverse DNS to get hostname of responding server
         remote_host_name = reverse_dns_lookup(recv_buff);
-        printf(" %s (%s)", remote_host_name, remote_host_address);
+        if (remote_host_name)
+            printf(" %s (%s)", remote_host_name, remote_host_address);
+        else
+            printf(" %s (%s)", remote_host_address, remote_host_address);
         free(remote_host_name);
     }
+    // Update the previous_host_value in tr for the next packet
     for (int i = 0 ; i < INET_ADDRSTRLEN ; i++)
         tr->previous_host_address[i] = remote_host_address[i];
-    printf(" %.3ld ms");
+    // Print the RTT
+    printf(" %.3lf ms", timediff);
+    // Detect if the host has been reached
     if (ft_strncmp(tr->hostaddress, remote_host_address, INET_ADDRSTRLEN) == 0)
         tr->destination_reached = true;
 }
@@ -99,19 +108,18 @@ bool read_loop(struct s_ft_traceroute * tr) {
         FD_ZERO(&read_fs);
         FD_SET(tr->icmp_sockfd, &read_fs);
         // wait for data to come back on the icmp socket
-        ready_count = select(tr->icmp_sockfd + 1, &read_fs, NULL, NULL, &timeout);
+        ready_count = select(MAX(tr->icmp_sockfd, tr->udp_sockfd) + 1, &read_fs, NULL, NULL, &timeout);
         if (ready_count < 0)
             fail(tr, print_strerror);
         // Case where the timeout expired and no data was received
-        else if (ready_count == 0 || !FD_ISSET(tr->udp_sockfd, &read_fs)) {
-    printf(" %ld %ld", timeout.tv_sec, timeout.tv_usec);
-            printf(" *"); // ça c'est bof bof, à revoir
+        else if (ready_count == 0 || !FD_ISSET(tr->icmp_sockfd, &read_fs)) {
+            printf(" *");
             return false;
         }
         // Case where data was received
         ft_bzero(recv_buff, sizeof(recv_buff));
         // Receive the data
-        if (read(tr->udp_sockfd, recv_buff, sizeof(recv_buff)) == -1)
+        if (read(tr->icmp_sockfd, recv_buff, sizeof(recv_buff)) == -1)
             fail(tr, print_strerror);
         // Verify that we have received the correct packet
         if (!verify_udp_and_icmp_header(recv_buff, tr))
@@ -156,11 +164,11 @@ int main(int argc, char ** argv) {
             if (gettimeofday(&tr.send_time, NULL)) 
                 fail(&tr, time_error);
             // send over udp
-            if (sendto(tr.udp_sockfd, tr.udp_data, sizeof(tr.udp_data), 0, (struct sockaddr *)&tr.serv_addr, sizeof(tr.serv_addr)) == -1) 
+            if (sendto(tr.udp_sockfd, tr.udp_data, sizeof(tr.udp_data), 0, (struct sockaddr *)&tr.serv_addr, sizeof(struct sockaddr)) == -1) 
                 fail(&tr, send_error);
             // receive data over icmp
             read_loop(&tr);
-            tr.serv_addr.sin_port = tr.serv_addr.sin_port++;
+            tr.serv_addr.sin_port = htons(ntohs(tr.serv_addr.sin_port) + 1);
         }
         printf("\n");
     }

@@ -6,6 +6,7 @@
 #include <netdb.h>
 #include <errno.h>
 #include "ft_traceroute.h"
+#include "libft.h"
 
 bool dns_lookup(struct s_ft_traceroute *tr) {
     struct addrinfo hints, *result;
@@ -35,5 +36,5 @@ char* reverse_dns_lookup(const char * raw_pkt) {
     memcpy(&addr.sin_addr, raw_pkt + 12, 4);
     if (getnameinfo((struct sockaddr*)&addr, sizeof(addr), hostname, sizeof(hostname), NULL, 0, NI_NAMEREQD))
         return NULL;
-    return strdup(hostname);
+    return ft_strdup(hostname);
 }

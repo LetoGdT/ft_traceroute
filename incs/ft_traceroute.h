@@ -11,6 +11,7 @@
 # define TIME_ERROR "Error when retrieving the time\n"
 # define SEND_ERROR "%s: Cannot send packets over socket: %s\n", tr->prog_name, strerror(errno)
 # define PRINT_STRERROR "%s: %s\n", tr->prog_name, strerror(errno)
+# define MAX(A, B) ((A > B)?A:B)
 
 enum error_type {
     time_error,
