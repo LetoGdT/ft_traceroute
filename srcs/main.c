@@ -14,7 +14,15 @@
 void parse(int argc, char ** argv, struct s_ft_traceroute * tr) {
     ft_bzero(tr, sizeof(*tr));
     tr->prog_name = argv[0];
-    tr->host_name = "google.com";
+    if (argc != 2) {
+        printf(USAGE);
+        exit(1);
+    }
+    if (argc == 2 && ft_strncmp("--help", argv[1], 7) == 0) {
+        printf(USAGE);
+        exit(1);
+    }
+    tr->host_name = argv[1];
 }
 
 void init(struct s_ft_traceroute * tr) {

@@ -7,6 +7,7 @@
 # define DFLT_PROBE_NUMBER 3
 # define FIRST_PORT 33434
 # define DEFAULT_MAX_TIMEOUT 1000
+# define USAGE "Usage:\n %s [--help] host\n", argv[0]
 # define DNS_LKUP_ERR "%s: %s: Name or service not known\n", tr->prog_name, tr->host_name
 # define TIME_ERROR "Error when retrieving the time\n"
 # define SEND_ERROR "%s: Cannot send packets over socket: %s\n", tr->prog_name, strerror(errno)
