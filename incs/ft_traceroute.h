@@ -49,7 +49,9 @@ char * reverse_dns_lookup(const char * raw_pkt);
 void   parse(int argc, char ** argv, struct s_ft_traceroute * tr);
 void   init(struct s_ft_traceroute * tr);
 bool   read_loop(struct s_ft_traceroute * tr);
-bool   verify_udp_and_icmp_header(const char * recv_buff, const struct s_ft_traceroute * tr);
+bool   verify_udp_and_icmp_header(char * recv_buff, const struct s_ft_traceroute * tr);
 void   print_message(const char * recv_buff, struct s_ft_traceroute * tr);
 void   fail(const struct s_ft_traceroute * tr, enum error_type error);
+bool   verify_icmp_checksum(unsigned char * ICMP_pkt, size_t size);
+bool   verify_ip_checksum(void *ip_packet);
 #endif

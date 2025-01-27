@@ -51,19 +51,30 @@ void init(struct s_ft_traceroute * tr) {
     tr->serv_addr.sin_addr = ((struct sockaddr_in)tr->serv_addr).sin_addr;
 }
 
-bool verify_udp_and_icmp_header(const char * recv_buff, const struct s_ft_traceroute * tr) {
+bool verify_udp_and_icmp_header(char * recv_buff, const struct s_ft_traceroute * tr) {
     struct s_icmp_hdr hdr;
     uint8_t size_of_first_ip_hdr;
     uint8_t size_of_second_ip_hdr;
+    uint16_t total_size_of_ip_packet;
     uint16_t dest_port;
 
-    // Extract icmp header from received packet
-    ft_memcpy(&hdr, recv_buff + (recv_buff[0] & 0xF) * 4, sizeof(hdr));
+    // Verify the checksum of the outermost ip hdr
+    if (!verify_ip_checksum(recv_buff))
+        return false;
+    // Get size of first ip hdr, IHL, which is in the lower nibble of byte 0
+    size_of_first_ip_hdr = (recv_buff[0] & 0xF) * 4;
+    // Compute and verify the ICMP checksum
+    ft_memcpy(&total_size_of_ip_packet, recv_buff + 2, 2);
+    total_size_of_ip_packet = ntohs(total_size_of_ip_packet);
+    if (!verify_icmp_checksum(recv_buff + size_of_first_ip_hdr, total_size_of_ip_packet - size_of_first_ip_hdr))
+        return false;
+    // Extract icmp header from received packet, which is immediately after the first ip hdr
+    ft_memcpy(&hdr, recv_buff + size_of_first_ip_hdr, sizeof(hdr));
+    // Verify the ICMP header is of type 'destination unreachable' or 'time exceeded, TTL expired in transit'
     if (!(hdr.type == 11 && hdr.code == 0) && !hdr.type == 3)
         return false;
-    // Extract destination port of the udp packet that caused the icmp packet to be sent
-    size_of_first_ip_hdr = (recv_buff[0] & 0xF) * 4;
     size_of_second_ip_hdr = (recv_buff[size_of_first_ip_hdr + sizeof(hdr)] & 0xF) * 4;
+    // Extract destination port of the udp packet that caused the icmp packet to be sent
     ft_memcpy(&dest_port, recv_buff + size_of_first_ip_hdr + size_of_second_ip_hdr + sizeof(hdr) + 2, 2);
     return dest_port == tr->serv_addr.sin_port;
 }
@@ -98,7 +109,7 @@ void print_message(const char * recv_buff, struct s_ft_traceroute * tr) {
         tr->previous_host_address[i] = remote_host_address[i];
     // Print the RTT
     printf(" %.3lf ms", timediff);
-    // Detect if the host has been reached
+    // Detect if the target host has been reached
     if (ft_strncmp(tr->hostaddress, remote_host_address, INET_ADDRSTRLEN) == 0)
         tr->destination_reached = true;
 }
