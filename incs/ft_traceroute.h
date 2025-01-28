@@ -3,16 +3,23 @@
 # include <sys/types.h>
 # include <sys/types.h>
 # include <sys/time.h>
+# include <stdbool.h>
+# include <arpa/inet.h>
 # define DFLT_MAX_HOPS 30
 # define DFLT_PROBE_NUMBER 3
 # define FIRST_PORT 33434
 # define DEFAULT_MAX_TIMEOUT 1000
-# define USAGE "Usage:\n %s [--help] host\n", argv[0]
-# define DNS_LKUP_ERR "%s: %s: Name or service not known\n", tr->prog_name, tr->host_name
+# define DNS_LKUP_ERR "%s: Name or service not known\nCannot handle \"host\" cmdline arg `%s' on position 1 (argc 1)\n", tr->host_name, tr->host_name
 # define TIME_ERROR "Error when retrieving the time\n"
 # define SEND_ERROR "%s: Cannot send packets over socket: %s\n", tr->prog_name, strerror(errno)
 # define PRINT_STRERROR "%s: %s\n", tr->prog_name, strerror(errno)
 # define MAX(A, B) ((A > B)?A:B)
+# define USAGE "Usage:\n\
+  %s [--help] host\n\
+Options:\n\
+  --help            Read this help and exit\n\
+Arguments:\n\
++     host          The host to traceroute to\n", argv[0]
 
 enum error_type {
     time_error,

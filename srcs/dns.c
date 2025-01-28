@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stdbool.h>
 #include <arpa/inet.h>
-#include <sys/types.h>
 #include <netdb.h>
 #include <errno.h>
 #include "ft_traceroute.h"

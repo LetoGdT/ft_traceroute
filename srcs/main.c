@@ -187,7 +187,7 @@ int main(int argc, char ** argv) {
                 fail(&tr, send_error);
             // receive data over icmp
             read_loop(&tr);
-            tr.serv_addr.sin_port = htons(ntohs(tr.serv_addr.sin_port) + 1);
+            tr.serv_addr.sin_port = tr.serv_addr.sin_port + htons(1);
         }
         printf("\n");
     }
